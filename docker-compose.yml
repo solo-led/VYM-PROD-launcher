@@ -1,0 +1,113 @@
+version: '3'
+
+
+
+services:
+
+  nats-server:
+    image: nats:2.1
+    ports:
+      - 8222:8222
+      - 4222:4222
+
+  client-gateway:
+    build: ./client-gateway
+    ports:
+      - ${CLIENT_GATEWAY_PORT}:3010
+    volumes: 
+      - ./client-gateway/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3010
+      - NATS_SERVERS=nats://nats-server:4222
+    
+  electrica-ms:
+    depends_on:
+      - vym-db
+    build: ./vym-invoices
+    volumes:
+      - ./vym-invoices/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3007
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=postgresql://postgres:123456@vym-db:5437/vymdb?schema=public
+
+  vym-db:
+    container_name: electrica-db
+    image: postgres:16.2
+    restart: always
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    ports:
+      - 5437:5437
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=vymdb
+    command: -p 5437
+  auth-ms:
+    build: ./auth-ms
+    volumes:
+      - ./auth-ms/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3013
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=${AUTH_DATABASE_URL}
+        # - DATABASE_URL=${AUTH_DATABASE_URL}
+        # - JWT_SECRET=${JWT_SECRET}
+       
+  # banks-ms:
+  #   build: ./banks-ms
+  #   volumes: 
+  #     - ./banks-ms/src:/usr/src/app/src/
+  #   command: npm run start:dev
+  #   environment:
+  #     - PORT=3011
+  #     - NATS_SERVERS=nats://nats-server:4222
+  #     - DATABASE_URL=file:./dev.db 
+
+  # guias-ms:
+  #   build: 
+  #     context: ./guias-ms
+  #     dockerfile: dockerfile.prod
+  #   volumes:
+  #     - ./guias-ms/src:/usr/src/app/src
+  #   environment:
+  #     - PORT=3000
+  #     - NATS_SERVERS=nats://nats-server:4222
+
+  # invoices-ms:
+  #   depends_on:
+  #     - invoices-db
+  #   build: ./invoices-ms
+  #   volumes:
+  #     - ./invoices-ms/src:/usr/src/app/src
+  #   command: npm run start:dev
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:321456@invoices-db:5435/invoicedb?schema=public
+  #     - PORT=3012
+  #     - NATS_SERVERS=nats://nats-server:4222
+
+  # invoices-db:
+  #   container_name: invoices_database
+  #   image: postgres:16.2
+  #   restart: always
+  #   volumes:
+  #     - ./invoices-ms/postgres:/var/lib/postgresql/data
+  #   ports:
+  #     - "5435:5435"
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=321456
+  #     - POSTGRES_DB=invoicedb
+  #   command: -p 5435
+
+
+
+
+
+
+
+

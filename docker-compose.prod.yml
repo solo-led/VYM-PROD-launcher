@@ -1,0 +1,87 @@
+version: '3'
+
+
+
+services:
+
+  nats-server:
+    image: nats:2.1
+
+
+  client-gateway:
+    build: 
+      context: ./client-gateway
+      dockerfile: dockerfile.prod
+    image: client-gateway-prod
+    ports:
+      - ${CLIENT_GATEWAY_PORT}:${CLIENT_GATEWAY_PORT}
+    environment:
+      - PORT=${CLIENT_GATEWAY_PORT}
+      - NATS_SERVERS=nats://nats-server:4222
+    
+   
+  # banks-ms:
+  #   build: ./banks-ms
+  #   volumes: 
+  #       - ./banks-ms/src:/usr/src/app/src/
+  #   command: npm run start:dev
+  #   environment:
+  #      - PORT=3011
+  #      - NATS_SERVERS=nats://nats-server:4222
+  #      - DATABASE_URL=file:./dev.db 
+
+  invoices-ms:
+    build:
+      context: ./invoices-ms
+      dockerfile: dockerfile.prod
+      args:
+        - INVOICES_DATABASE_URL=${INVOICES_DATABASE_URL}
+    image: invoices-ms
+    environment:
+      - DATABASE_URL=${INVOICES_DATABASE_URL}
+      - PORT=3000
+      - NATS_SERVERS=nats://nats-server:4222
+
+  # invoices-db:
+  #   container_name: invoices_database
+  #   image: postgres:16.2
+  #   restart: always
+  #   volumes:
+  #     - ./invoices-ms/postgres:/var/lib/postgresql/data
+  #   ports:
+  #     - "5435:5435"
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=321456
+  #     - POSTGRES_DB=invoicedb
+  #   command: -p 5435
+
+
+  
+
+
+
+
+  auth-ms:
+    build: 
+      context: ./auth-ms
+      dockerfile: dockerfile.prod
+    image: auth-ms-prod
+    environment:
+      - PORT=3000
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=${AUTH_DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+
+  guias-ms:
+    build: 
+      context: ./guias-ms
+      dockerfile: dockerfile.prod
+    image: guias-ms-prod
+    environment:
+      - PORT=3000
+      - NATS_SERVERS=nats://nats-server:4222
+      # - DATABASE_URL=${AUTH_DATABASE_URL}
+      # - JWT_SECRET=${JWT_SECRET}
+
+

@@ -1,0 +1,9 @@
+[submodule "client-gateway"]
+	path = client-gateway
+	url = https://github.com/solo-led/client-gateway.git
+[submodule "vym-invoices"]
+	path = vym-invoices
+	url = https://github.com/solo-led/vym-invoices.git
+[submodule "auth-vym-ms"]
+	path = auth-vym-ms
+	url = https://github.com/solo-led/auth-sololed-ms.git
