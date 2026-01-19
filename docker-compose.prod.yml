@@ -62,10 +62,10 @@ services:
 
 
 
-  auth-ms:
+  auth-vym-ms:
     build: 
-      context: ./auth-ms
-      dockerfile: dockerfile.prod
+      context: ./auth-vym-ms
+      dockerfile: Dockerfile.prod
     image: auth-ms-prod
     environment:
       - PORT=3000
