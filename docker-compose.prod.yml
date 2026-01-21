@@ -1,87 +1,49 @@
 version: '3'
 
-
-
 services:
-
-  nats-server:
-    image: nats:2.1
-
-
   client-gateway:
-    build: 
-      context: ./client-gateway
-      dockerfile: dockerfile.prod
-    image: client-gateway-prod
+    image: obssesion/client-gateway-ms:1.0
     ports:
-      - ${CLIENT_GATEWAY_PORT}:${CLIENT_GATEWAY_PORT}
+      - "${CLIENT_GATEWAY_PORT}:3010"
     environment:
-      - PORT=${CLIENT_GATEWAY_PORT}
-      - NATS_SERVERS=nats://nats-server:4222
-    
-   
-  # banks-ms:
-  #   build: ./banks-ms
-  #   volumes: 
-  #       - ./banks-ms/src:/usr/src/app/src/
-  #   command: npm run start:dev
-  #   environment:
-  #      - PORT=3011
-  #      - NATS_SERVERS=nats://nats-server:4222
-  #      - DATABASE_URL=file:./dev.db 
-
-  invoices-ms:
-    build:
-      context: ./invoices-ms
-      dockerfile: dockerfile.prod
-      args:
-        - INVOICES_DATABASE_URL=${INVOICES_DATABASE_URL}
-    image: invoices-ms
-    environment:
-      - DATABASE_URL=${INVOICES_DATABASE_URL}
-      - PORT=3000
+      - PORT=3010
       - NATS_SERVERS=nats://nats-server:4222
 
-  # invoices-db:
-  #   container_name: invoices_database
-  #   image: postgres:16.2
-  #   restart: always
-  #   volumes:
-  #     - ./invoices-ms/postgres:/var/lib/postgresql/data
-  #   ports:
-  #     - "5435:5435"
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=321456
-  #     - POSTGRES_DB=invoicedb
-  #   command: -p 5435
-
-
-  
-
-
-
-
-  auth-vym-ms:
-    build: 
-      context: ./auth-vym-ms
-      dockerfile: Dockerfile.prod
-    image: auth-ms-prod
+  electrica-ms:
+    image: obssesion/electrica-ms:1.0
+    depends_on:
+      - vym-db
     environment:
-      - PORT=3000
+      - PORT=3007
+      - NATS_SERVERS=nats://nats-server:4222
+      - DATABASE_URL=postgresql://postgres:123456@vym-db:5432/vymdb?schema=public
+
+  auth-ms:
+    image: obssesion/auth-ms:1.0
+    environment:
+      - PORT=3013
       - NATS_SERVERS=nats://nats-server:4222
       - DATABASE_URL=${AUTH_DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./auth-vym-ms/data:/usr/src/app/data
+    ports:
+      - "3013:3013"
+    restart: unless-stopped
 
-  guias-ms:
-    build: 
-      context: ./guias-ms
-      dockerfile: dockerfile.prod
-    image: guias-ms-prod
+  vym-db:
+    image: postgres:16.2
+    ports:
+      - "5437:5432"
     environment:
-      - PORT=3000
-      - NATS_SERVERS=nats://nats-server:4222
-      # - DATABASE_URL=${AUTH_DATABASE_URL}
-      # - JWT_SECRET=${JWT_SECRET}
-
-
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB=vymdb
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      
+  nats-server:
+    image: nats:2.1
+    ports:
+      - "4222:4222"
+      - "8222:8222"
